@@ -4,7 +4,7 @@ import numpy as np
 # MEMBACA FILE 
 
 df1 = pd.read_excel('Input.xlsx')   # FILE INPUT
-df2 = pd.read_excel('New1.xlsx')     # FILE FIX INPUT AGENT / FILE KORLAP
+df2 = pd.read_excel('Data.xlsx')     # FILE FIX INPUT AGENT / FILE KORLAP
 df3 = pd.read_excel('Output.xlsx')  # FILE AKHIR / OUTPUT
 
 # MENDAPAT NILAI KORLAP
@@ -21,6 +21,6 @@ df7 = pd.merge(df3, df6[['MASTER_AGENT_ID', 'Korlap_10%']], on='MASTER_AGENT_ID'
 
 df3["TRANSFER_VALUE"] = df7['Korlap_10%']
 
-df3.to_excel("New3.xlsx",index=False)
+df3.to_excel("Done.xlsx",index=False)
 
 # df3
