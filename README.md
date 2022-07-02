@@ -1,6 +1,6 @@
 # Tkinter-for-Excel
 
-I am very new in tkinter can you guys help me. I want to enter the main program (Korlap) to process excel file data into the gui program that I got from the search results.
+I am very new in tkinter can you guys help me. I want to enter the main program (Korlap) to process excel file data into the gui program.
 
 i want to initialize
 1. The input file becomes df1
