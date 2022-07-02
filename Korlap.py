@@ -4,7 +4,7 @@ import numpy as np
 # READ FILE
 df1 = pd.read_excel('Input.xlsx')   # FILE INPUT
 df2 = pd.read_excel('Data.xlsx')     # FILE FIX INPUT AGENT / FILE KORLAP
-df3 = pd.read_excel('Output.xlsx')  # FILE AKHIR / OUTPUT
+df3 = pd.read_excel('Output.xlsx')  # FILE OUTPUT
 
 # GETTING KORLAP VALUE
 
