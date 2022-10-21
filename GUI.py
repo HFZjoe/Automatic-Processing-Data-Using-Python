@@ -1,68 +1,78 @@
-import os
-from tkinter import *
-from tkinter import ttk
-from tkinter import filedialog
-import pandas as pd
-import numpy as np
-
-userProfile = os.path.expanduser("~").split("\\")[-1]
-class XLXFile:
-    def __init__(self, path):
-        self.path = path
-        self.name = path.split("/")[-1].split(".")[0]
-        self.ext = path.split(".")[1]
-
 def browseFile(fileType):
     selectedFile = filedialog.askopenfilename(title = "Select {}".format(fileType), filetypes = (("xlsx","*.xlsx*"),("All Files","*.*")))
     if selectedFile != "":
         if fileType == "A":
             global fileA
-            fileA = XLXFile(selectedFile)
-            fileALabel.config(text = fileA.name + fileA.ext)
+            fileA = os.path.abspath(selectedFile)
+            basename = ntpath.basename(fileA)
+            fileALabel.config(text = basename)
         elif fileType == "B":
             global fileB
-            fileB = XLXFile(selectedFile)
-            fileBLabel.config(text = fileB.name + fileB.ext)
+            fileB = os.path.abspath(selectedFile)
+            basename = ntpath.basename(fileB)
+            fileBLabel.config(text = basename)
         elif fileType == "C":
             global fileC
-            fileC = XLXFile(selectedFile)
-            fileCLabel.config(text = fileC.name + fileC.ext)
-            
+            fileC = os.path.abspath(selectedFile)
+            basename = ntpath.basename(fileC)
+            fileCLabel.config(text = basename)
 
 
+def Folder_Directory():
+   Folder = filedialog.askdirectory(parent=mainRoot,initialdir="/",title='Please select a directory')
+   FolderPath = os.path.abspath(Folder)
+   FolderLabel.config(text = FolderPath)
 
-mainRoot = Tk()
-mainRoot.geometry("685x300")
-mainRoot.title("Transaction Company")
-mainFrame = Frame(mainRoot)
-mainFrame.pack(fill = BOTH, expand = 1, padx = 10, pady = 20)
 
-Label(mainFrame, text = "Data Manager", font = ("JUST DO GOOD",15)).grid(column = 1, row = 0,columnspan = 4)
-ttk.Separator(mainFrame, orient=HORIZONTAL).grid(sticky = E+W,row=1,column=0,columnspan=6, pady = 10)
+def mainProcess():
+    
+    df1 = pd.read_excel(fileA)  # FILE TRANSAKSI BULANAN
+    df2 = pd.read_excel(fileB)  # FILE ADMIN TRANSAKSI
+    df3 = pd.read_excel(fileC)  # FILE AKHIR / INPUT
 
-Button(mainFrame, text ="Select File Input", command = lambda:[browseFile("A")],height=2, relief = "ridge").grid(sticky = "ew",row=2,column=0,columnspan=2)
-Button(mainFrame, text ="Select File Data", command = lambda:[browseFile("B")],height=2, relief = "ridge").grid(sticky = "ew",row=2,column=2,columnspan=2)
-Button(mainFrame, text ="Select File Output", command = lambda:[browseFile("C")],height=2, relief = "ridge").grid(sticky = "ew",row=2,column=4,columnspan=2)
+# MENDAPAT NILAI PROPOSE
 
-fileALabel = Label(mainFrame, text="No file Selected",width = 30,height=2)
-fileBLabel = Label(mainFrame, text="No file Selected",width = 30,height=2)
-fileCLabel = Label(mainFrame, text="No file Selected",width = 30,height=2)
-fileALabel.grid(row=3,column=0,columnspan=2)
-fileBLabel.grid(row=3,column=2,columnspan=2)
-fileCLabel.grid(row=3,column=4,columnspan=2)
+    df1.rename(columns={'agent_id':'AGENT_ID'}, inplace=True)
+    df1.rename(columns={'description':'Nama Produk'}, inplace=True)
 
-ttk.Separator(mainFrame, orient=HORIZONTAL).grid(sticky = E+W,row=4,column=0,columnspan=6, ipadx=100)
 
-Label(mainFrame,text = "Alternatif Name To Be Saved :", relief = "groove",height = 2).grid(sticky = "ew",column = 0,row = 5, columnspan = 2,pady = 10)
-alterName = Entry(mainFrame,width = 21,font=("Times New Roman",15),justify = "center")
-alterName.grid(row = 5, column = 3,padx=(15,0))
+    df1['Nama Produk']=df1['Nama Produk'].str.lower()
+    df2['Nama Produk']=df2['Nama Produk'].str.lower()
+    df4 = pd.merge(df1, df2[['Nama Produk', 'Nilai Propose']], on='Nama Produk', how='left')
 
-ttk.Separator(mainFrame, orient=HORIZONTAL).grid(sticky = E+W,row=7,column=0,columnspan=6, ipadx=100)
-Button(mainFrame,text = "Start",command = lambda: [mainProcess()], bg='#FF6900', fg='black', font= ("JUST DO GOOD",13)).grid(sticky = E+W, row=9,columnspan=6, pady = 10)
 
-finalLabel = Label(mainFrame,text = "",width = 60)
-finalLabel.grid(row=10,column=0,columnspan=4)
+    # MENGUBAH MENJADI FIX INPUT AGENT
 
-ttk.Separator(mainFrame, orient=HORIZONTAL).grid(sticky = E+W,row=10,column=0,columnspan=6, ipadx=100)
-Label(mainFrame, text = "Copyright Company").grid(row = 10, column = 0, columnspan = 6)
-mainRoot.mainloop()
+    df4 = df4.groupby(by="AGENT_ID").sum()[["Nilai Propose"]]
+    df4["Korgen_40%"] = (df4["Nilai Propose"]) * 0.4
+    df4["Agent_60%"] = (df4["Nilai Propose"]) * 0.6
+    df4["Korlap_10%"] = (df4["Agent_60%"]) * 0.1
+    df4["Agent_Recieved"] = (df4["Agent_60%"]) - (df4["Korlap_10%"])
+    df4["Fix_Input_Agent"] = np.floor(df4["Agent_Recieved"])
+    df4.reset_index(inplace=True)
+
+    # MENGINPUT KE FILE INPUT 
+
+    df5 = pd.merge(df3, df4[['AGENT_ID','Fix_Input_Agent']], on='AGENT_ID', how='left')
+    df6 = df5['Fix_Input_Agent'].fillna(value = 0)
+
+    df3["TRANSFER_VALUE"] = df6
+
+    NamaFile1 = alterName1.get()  
+    NamaFile2 = alterName2.get()  
+
+    if NamaFile1 == '' or NamaFile2 == '':
+        m_box.showerror('Caution', 'Nama File Tidak Boleh Kosong')
+
+        return False
+
+    NamaFolder = FolderLabel.cget("text")
+
+    if NamaFolder == 'No folder Selected':
+        m_box.showerror('Caution', 'Pilih Folder terlebih dahulu')
+
+        return False
+
+    df4.to_excel(f"{NamaFolder}\{NamaFile1}.xlsx", index=False)
+    df3.to_excel(f"{NamaFolder}\{NamaFile2}.xlsx", index=False)
+    m_box.showinfo('File Export','Sukses Membuat File')
